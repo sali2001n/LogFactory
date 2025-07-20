@@ -32,6 +32,8 @@ android {
     }
 }
 
+group = "com.sali.logfactory"
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
