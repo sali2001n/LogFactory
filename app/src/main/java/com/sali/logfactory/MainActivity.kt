@@ -11,12 +11,33 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.sali.logfactory.factory.LogFactory
+import com.sali.logfactory.models.LogType
 import com.sali.logfactory.ui.theme.LogFactoryTheme
+import java.io.IOException
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        LogFactory.log(
+            logType = LogType.Info, // Specify the type of the log you are using
+            tag = "Log tag",
+            message = "Log message"
+        )
+
+        try {
+            throw IOException("Some message...")
+        } catch (ioException: IOException) {
+            LogFactory.log(
+                logType = LogType.Error,
+                tag = "Log tag",
+                message = "Log message",
+                throwable = ioException // You can add an exception or a throwable into the log
+            )
+        }
+
         setContent {
             LogFactoryTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
