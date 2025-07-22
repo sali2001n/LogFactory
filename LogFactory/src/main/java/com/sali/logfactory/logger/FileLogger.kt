@@ -15,8 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileWriter
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class FileLogger : ILogger {
 
@@ -60,7 +58,7 @@ class FileLogger : ILogger {
             val currentLogFile = logFile!!
             val currentAppContext = appContext!!
 
-            val formattedMessage = formatLogMessage(logEntry)
+            val formattedMessage = currentLogConfig.formatter.format(logEntry)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 try {
@@ -124,22 +122,6 @@ class FileLogger : ILogger {
 
     private fun isInitialized(): Boolean =
         logFile != null && logConfig != null && appContext != null
-
-    private fun formatLogMessage(logEntry: LogEntry): String {
-        val timestamp = SimpleDateFormat(
-            "yyyy-MM-dd HH:mm:ss.SSS",
-            Locale.getDefault()
-        ).format(logEntry.date)
-        return if (logEntry.throwable != null) {
-            "$timestamp [${logEntry.logType.name}] [${logEntry.tag}]: ${logEntry.message}\n${
-                Log.getStackTraceString(
-                    logEntry.throwable
-                )
-            }"
-        } else {
-            "$timestamp [${logEntry.logType.name}] [${logEntry.tag}]: ${logEntry.message}"
-        }
-    }
 
     private fun isExternalStorageWritable() =
         Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
