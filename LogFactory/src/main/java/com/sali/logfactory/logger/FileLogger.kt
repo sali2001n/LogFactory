@@ -14,6 +14,8 @@ import com.sali.logfactory.models.LogEntry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.FileWriter
 
@@ -26,6 +28,8 @@ class FileLogger : ILogger {
     private var logFile: File? = null
     private var logConfig: LogConfig? = null
     private var appContext: Context? = null
+
+    private val clearLogsFileMutex = Mutex()
     private var isFileClearedThisSession = false
 
     override fun initialize(context: Context, config: LogConfig) {
@@ -61,8 +65,6 @@ class FileLogger : ILogger {
             val currentAppContext = appContext!!
 
             val formattedMessage = currentLogConfig.formatter.format(logEntry)
-            val shouldRemoveOldLogs =
-                currentLogConfig.clearFileWhenAppLaunched && !isFileClearedThisSession
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 try {
@@ -76,13 +78,19 @@ class FileLogger : ILogger {
                         "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
                     val selectionArgs = arrayOf(mediaStoreRelativePath, currentLogConfig.fileName)
 
-                    if (shouldRemoveOldLogs)
-                        deleteOldLogsFile(
-                            resolver = resolver,
-                            contentUri = contentUri,
-                            selection = selection,
-                            selectionArgs = selectionArgs
-                        )
+                    if (currentLogConfig.clearFileWhenAppLaunched) {
+                        clearLogsFileMutex.withLock {
+                            if (!isFileClearedThisSession) {
+                                deleteOldLogsFile(
+                                    resolver = resolver,
+                                    contentUri = contentUri,
+                                    selection = selection,
+                                    selectionArgs = selectionArgs
+                                )
+                                isFileClearedThisSession = true
+                            }
+                        }
+                    }
 
                     var uri: Uri? = null
 
@@ -120,7 +128,19 @@ class FileLogger : ILogger {
                 }
             } else {
                 try {
-                    val writer = FileWriter(currentLogFile, shouldRemoveOldLogs)
+                    if (currentLogConfig.clearFileWhenAppLaunched) {
+                        clearLogsFileMutex.withLock {
+                            if (!isFileClearedThisSession) {
+                                val deleteResult = currentLogFile.delete()
+                                if (!deleteResult)
+                                    Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29<")
+                                isFileClearedThisSession = true
+                                true
+                            } else false
+                        }
+                    } else false
+
+                    val writer = FileWriter(currentLogFile, true)
                     writer.use {
                         it.append(formattedMessage)
                         it.append("\n\n")
