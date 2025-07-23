@@ -1,5 +1,6 @@
 package com.sali.logfactory.logger
 
+import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
@@ -25,6 +26,7 @@ class FileLogger : ILogger {
     private var logFile: File? = null
     private var logConfig: LogConfig? = null
     private var appContext: Context? = null
+    private var isFileClearedThisSession = false
 
     override fun initialize(context: Context, config: LogConfig) {
         this.appContext = context.applicationContext
@@ -59,6 +61,8 @@ class FileLogger : ILogger {
             val currentAppContext = appContext!!
 
             val formattedMessage = currentLogConfig.formatter.format(logEntry)
+            val shouldRemoveOldLogs =
+                currentLogConfig.clearFileWhenAppLaunched && !isFileClearedThisSession
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 try {
@@ -71,6 +75,15 @@ class FileLogger : ILogger {
                     val selection =
                         "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
                     val selectionArgs = arrayOf(mediaStoreRelativePath, currentLogConfig.fileName)
+
+                    if (shouldRemoveOldLogs)
+                        deleteOldLogsFile(
+                            resolver = resolver,
+                            contentUri = contentUri,
+                            selection = selection,
+                            selectionArgs = selectionArgs
+                        )
+
                     var uri: Uri? = null
 
                     resolver.query(contentUri, null, selection, selectionArgs, null)
@@ -107,7 +120,7 @@ class FileLogger : ILogger {
                 }
             } else {
                 try {
-                    val writer = FileWriter(currentLogFile, true)
+                    val writer = FileWriter(currentLogFile, shouldRemoveOldLogs)
                     writer.use {
                         it.append(formattedMessage)
                         it.append("\n\n")
@@ -118,6 +131,41 @@ class FileLogger : ILogger {
                 }
             }
         }
+    }
+
+    private fun deleteOldLogsFile(
+        resolver: ContentResolver,
+        contentUri: Uri,
+        selection: String,
+        selectionArgs: Array<String>,
+    ) {
+        resolver.query(
+            contentUri,
+            arrayOf(MediaStore.MediaColumns._ID),
+            selection,
+            selectionArgs,
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val id =
+                    cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
+                val uriToDelete = ContentUris.withAppendedId(contentUri, id)
+                try {
+                    resolver.delete(uriToDelete, null, null)
+                    Log.d(
+                        FILE_LOGGER_TAG,
+                        "Existing log file deleted successfully."
+                    )
+                } catch (e: Exception) {
+                    Log.e(
+                        FILE_LOGGER_TAG,
+                        "Error deleting existing log file.",
+                        e
+                    )
+                }
+            }
+        }
+        isFileClearedThisSession = true
     }
 
     private fun isInitialized(): Boolean =
