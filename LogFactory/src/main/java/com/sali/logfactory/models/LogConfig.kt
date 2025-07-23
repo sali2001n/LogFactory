@@ -8,5 +8,6 @@ data class LogConfig(
     val parentDirectoryPath: String = Environment.DIRECTORY_DOWNLOADS,
     val childDirectoryPath: String = "MyAppLogs",
     val fileName: String = "my_app_log.txt",
+    val clearFileWhenAppLaunched: Boolean = false,
     val formatter: LogMessageFormatter = DefaultLogMessageFormatter,
 )

@@ -16,6 +16,8 @@ class LogFactoryApp : Application() {
             config = LogConfig(
                 // Use custom log message formatter
                 // formatter = CustomFormatter()
+                // Clear the old logs every time app launched
+                // clearFileWhenAppLaunched = true
             ),
             enabledLoggers = arrayOf(FileLogger())
         )
