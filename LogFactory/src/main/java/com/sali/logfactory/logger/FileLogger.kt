@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.sali.logfactory.models.LogConfig
 import com.sali.logfactory.models.LogEntry
 import kotlinx.coroutines.CoroutineScope
@@ -67,88 +68,17 @@ class FileLogger : ILogger {
             val formattedMessage = currentLogConfig.formatter.format(logEntry)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                try {
-                    val resolver = currentAppContext.contentResolver
-                    val contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
-
-                    val mediaStoreRelativePath =
-                        "${currentLogConfig.parentDirectoryPath}/${currentLogConfig.childDirectoryPath}/"
-
-                    val selection =
-                        "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
-                    val selectionArgs = arrayOf(mediaStoreRelativePath, currentLogConfig.fileName)
-
-                    if (currentLogConfig.clearFileWhenAppLaunched) {
-                        clearLogsFileMutex.withLock {
-                            if (!isFileClearedThisSession) {
-                                deleteOldLogsFile(
-                                    resolver = resolver,
-                                    contentUri = contentUri,
-                                    selection = selection,
-                                    selectionArgs = selectionArgs
-                                )
-                                isFileClearedThisSession = true
-                            }
-                        }
-                    }
-
-                    var uri: Uri? = null
-
-                    resolver.query(contentUri, null, selection, selectionArgs, null)
-                        ?.use { cursor ->
-                            if (cursor.moveToFirst()) {
-                                val id =
-                                    cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
-                                uri = ContentUris.withAppendedId(contentUri, id)
-                            }
-                        }
-
-                    if (uri == null) {
-                        val contentValues = ContentValues().apply {
-                            put(MediaStore.MediaColumns.DISPLAY_NAME, currentLogConfig.fileName)
-                            put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-                            put(MediaStore.MediaColumns.RELATIVE_PATH, mediaStoreRelativePath)
-                        }
-                        uri = resolver.insert(contentUri, contentValues)
-                    }
-
-                    uri?.let { fileUri ->
-                        resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
-                            outputStream.write(formattedMessage.toByteArray())
-                            outputStream.write("\n\n".toByteArray())
-                        }
-                    } ?: run {
-                        Log.e(
-                            FILE_LOGGER_TAG,
-                            "Failed to get or create MediaStore URI for log file."
-                        )
-                    }
-                } catch (e: Exception) {
-                    Log.e(FILE_LOGGER_TAG, "Error writing to log file via MediaStore", e)
-                }
+                loggingMechanismForApiVersion29AndAbove(
+                    currentLogConfig = currentLogConfig,
+                    currentAppContext = currentAppContext,
+                    formattedMessage = formattedMessage
+                )
             } else {
-                try {
-                    if (currentLogConfig.clearFileWhenAppLaunched) {
-                        clearLogsFileMutex.withLock {
-                            if (!isFileClearedThisSession) {
-                                val deleteResult = currentLogFile.delete()
-                                if (!deleteResult)
-                                    Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29<")
-                                isFileClearedThisSession = true
-                                true
-                            } else false
-                        }
-                    } else false
-
-                    val writer = FileWriter(currentLogFile, true)
-                    writer.use {
-                        it.append(formattedMessage)
-                        it.append("\n\n")
-                        it.flush()
-                    }
-                } catch (e: Exception) {
-                    Log.e(FILE_LOGGER_TAG, "Error writing to log file (old SDK)", e)
-                }
+                loggingMechanismForApiVersionBelow29(
+                    currentLogConfig = currentLogConfig,
+                    currentLogFile = currentLogFile,
+                    formattedMessage = formattedMessage
+                )
             }
         }
     }
@@ -186,6 +116,102 @@ class FileLogger : ILogger {
             }
         }
         isFileClearedThisSession = true
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private suspend fun loggingMechanismForApiVersion29AndAbove(
+        currentLogConfig: LogConfig,
+        currentAppContext: Context,
+        formattedMessage: String,
+    ) {
+        try {
+            val resolver = currentAppContext.contentResolver
+            val contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+
+            val mediaStoreRelativePath =
+                "${currentLogConfig.parentDirectoryPath}/${currentLogConfig.childDirectoryPath}/"
+
+            val selection =
+                "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
+            val selectionArgs = arrayOf(mediaStoreRelativePath, currentLogConfig.fileName)
+
+            if (currentLogConfig.clearFileWhenAppLaunched) {
+                clearLogsFileMutex.withLock {
+                    if (!isFileClearedThisSession) {
+                        deleteOldLogsFile(
+                            resolver = resolver,
+                            contentUri = contentUri,
+                            selection = selection,
+                            selectionArgs = selectionArgs
+                        )
+                        isFileClearedThisSession = true
+                    }
+                }
+            }
+
+            var uri: Uri? = null
+
+            resolver.query(contentUri, null, selection, selectionArgs, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val id =
+                            cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
+                        uri = ContentUris.withAppendedId(contentUri, id)
+                    }
+                }
+
+            if (uri == null) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, currentLogConfig.fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, mediaStoreRelativePath)
+                }
+                uri = resolver.insert(contentUri, contentValues)
+            }
+
+            uri?.let { fileUri ->
+                resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
+                    outputStream.write(formattedMessage.toByteArray())
+                    outputStream.write("\n\n".toByteArray())
+                }
+            } ?: run {
+                Log.e(
+                    FILE_LOGGER_TAG,
+                    "Failed to get or create MediaStore URI for log file."
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(FILE_LOGGER_TAG, "Error writing to log file via MediaStore", e)
+        }
+    }
+
+    private suspend fun loggingMechanismForApiVersionBelow29(
+        currentLogConfig: LogConfig,
+        currentLogFile: File,
+        formattedMessage: String,
+    ) {
+        try {
+            if (currentLogConfig.clearFileWhenAppLaunched) {
+                clearLogsFileMutex.withLock {
+                    if (!isFileClearedThisSession) {
+                        val deleteResult = currentLogFile.delete()
+                        if (!deleteResult)
+                            Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29<")
+                        isFileClearedThisSession = true
+                        true
+                    } else false
+                }
+            } else false
+
+            val writer = FileWriter(currentLogFile, true)
+            writer.use {
+                it.append(formattedMessage)
+                it.append("\n\n")
+                it.flush()
+            }
+        } catch (e: Exception) {
+            Log.e(FILE_LOGGER_TAG, "Error writing to log file (old SDK)", e)
+        }
     }
 
     private fun isInitialized(): Boolean =
