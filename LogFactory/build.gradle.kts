@@ -36,6 +36,8 @@ group = "com.sali.logfactory"
 
 dependencies {
 
+    implementation(libs.android.mail)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
