@@ -14,6 +14,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.Properties
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import javax.mail.Authenticator
 import javax.mail.Message
 import javax.mail.PasswordAuthentication
@@ -34,9 +36,9 @@ class EmailLogger(
     }
 
     private lateinit var context: Context
-    private var logCount = 0
-    private var lastSentTime = System.currentTimeMillis()
-    private var lastFailedAttempt = 0L
+    private var logCount = AtomicInteger(0)
+    private var lastSentTime = AtomicLong(System.currentTimeMillis())
+    private var lastFailedAttempt = AtomicLong(0L)
     private val retryDelayMillis = 5 * 60 * 1000L
     private val loggerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -55,13 +57,13 @@ class EmailLogger(
 
         when (smtpConfig.thresholdType) {
             ThresholdType.Counter -> {
-                logCount++
-                if (logCount >= smtpConfig.logCountThreshold) {
+                logCount.incrementAndGet()
+                if (logCount.get() >= smtpConfig.logCountThreshold) {
                     sendLogsViaSmtp { result, message ->
                         handleSendResult(
                             result = result,
                             message = message,
-                            onSuccess = { logCount = 0 }
+                            onSuccess = { logCount.set(0) }
                         )
                     }
                 }
@@ -69,15 +71,15 @@ class EmailLogger(
 
             ThresholdType.Timer -> {
                 val now = System.currentTimeMillis()
-                if (now - lastSentTime >= smtpConfig.timeThresholdMillis && // Check for interval
-                    now - lastFailedAttempt >= retryDelayMillis // Check for failed attempts
+                if (now - lastSentTime.get() >= smtpConfig.timeThresholdMillis && // Check for interval
+                    now - lastFailedAttempt.get() >= retryDelayMillis // Check for failed attempts
                 ) {
                     sendLogsViaSmtp { result, message ->
                         handleSendResult(
                             result = result,
                             message = message,
-                            onSuccess = { lastFailedAttempt = now },
-                            onFailure = { lastFailedAttempt = now }
+                            onSuccess = { lastFailedAttempt.set(now) },
+                            onFailure = { lastFailedAttempt.set(now) }
                         )
                     }
                 }
