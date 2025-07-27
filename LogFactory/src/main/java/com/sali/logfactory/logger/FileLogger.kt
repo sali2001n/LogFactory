@@ -172,7 +172,6 @@ class FileLogger : ILogger {
             uri?.let { fileUri ->
                 resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
                     outputStream.write(formattedMessage.toByteArray())
-                    outputStream.write("\n\n".toByteArray())
                 }
             } ?: run {
                 Log.e(
@@ -206,7 +205,6 @@ class FileLogger : ILogger {
             val writer = FileWriter(currentLogFile, true)
             writer.use {
                 it.append(formattedMessage)
-                it.append("\n\n")
                 it.flush()
             }
         } catch (e: Exception) {

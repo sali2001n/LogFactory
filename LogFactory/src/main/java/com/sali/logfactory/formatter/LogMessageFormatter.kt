@@ -20,9 +20,9 @@ object DefaultLogMessageFormatter : LogMessageFormatter {
                 Log.getStackTraceString(
                     logEntry.throwable
                 )
-            }"
+            }\n\n"
         } else {
-            "$timestamp [${logEntry.logType.name}] [${logEntry.tag}]: ${logEntry.message}"
+            "$timestamp [${logEntry.logType.name}] [${logEntry.tag}]: ${logEntry.message}\n\n"
         }
     }
 
