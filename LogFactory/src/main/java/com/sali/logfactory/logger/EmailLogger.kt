@@ -8,10 +8,10 @@ import com.sali.logfactory.models.LogConfig
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.SmtpConfig
 import com.sali.logfactory.models.ThresholdType
+import com.sali.logfactory.util.StorageManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
 import java.util.Properties
 import javax.mail.Authenticator
 import javax.mail.Message
@@ -30,7 +30,6 @@ class EmailLogger(
 
     companion object {
         private const val EMAIL_LOGGER_TAG = "EmailLogger"
-        private const val LOG_FILE_NAME = "logs.txt"
     }
 
     private lateinit var context: Context
@@ -49,22 +48,8 @@ class EmailLogger(
         this.context = context.applicationContext
     }
 
-    fun writeLogsToTheFile(context: Context, logEntry: LogEntry) {
-        val logFile = File(context.filesDir, LOG_FILE_NAME)
-        logFile.appendText(formatter.format(logEntry))
-    }
-
-    fun clearLogFile(context: Context) {
-        val file = getLogFile(context)
-        if (file.exists()) {
-            file.writeText("")
-        }
-    }
-
-    fun getLogFile(context: Context) = File(context.filesDir, LOG_FILE_NAME)
-
     override fun log(logEntry: LogEntry) {
-        writeLogsToTheFile(context, logEntry)
+        StorageManager.writeLogsToTheFile(context, formatter.format(logEntry))
 
         when (smtpConfig.thresholdType) {
             ThresholdType.Counter -> {
@@ -119,7 +104,7 @@ class EmailLogger(
             isSending = true
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val logFile = getLogFile(context)
+                    val logFile = StorageManager.getLogFile(context)
                     if (!logFile.exists() || logFile.length() == 0L) {
                         onResult(false, "Log file is empty.")
                         return@launch
@@ -162,7 +147,7 @@ class EmailLogger(
                     }
 
                     Transport.send(message)
-                    clearLogFile(context)
+                    StorageManager.clearLogFile(context)
                     onResult(true, null)
                 } catch (e: Exception) {
                     onResult(false, e.message)
