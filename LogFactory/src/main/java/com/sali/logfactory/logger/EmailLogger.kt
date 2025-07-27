@@ -11,6 +11,7 @@ import com.sali.logfactory.models.ThresholdType
 import com.sali.logfactory.util.StorageManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.Properties
 import javax.mail.Authenticator
@@ -37,6 +38,7 @@ class EmailLogger(
     private var lastSentTime = System.currentTimeMillis()
     private var lastFailedAttempt = 0L
     private val retryDelayMillis = 5 * 60 * 1000L
+    private val loggerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Volatile
     private var isSending = false
@@ -102,7 +104,7 @@ class EmailLogger(
     fun sendLogsViaSmtp(onResult: (Boolean, String?) -> Unit) {
         if (!isSending) {
             isSending = true
-            CoroutineScope(Dispatchers.IO).launch {
+            loggerScope.launch {
                 try {
                     val logFile = StorageManager.getLogFile(context)
                     if (!logFile.exists() || logFile.length() == 0L) {
