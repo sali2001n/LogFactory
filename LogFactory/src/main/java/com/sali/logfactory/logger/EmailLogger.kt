@@ -2,6 +2,8 @@ package com.sali.logfactory.logger
 
 import android.content.Context
 import android.util.Log
+import com.sali.logfactory.formatter.DefaultLogMessageFormatter
+import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.LogConfig
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.SmtpConfig
@@ -9,6 +11,7 @@ import com.sali.logfactory.models.ThresholdType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.Properties
 import javax.mail.Authenticator
 import javax.mail.Message
@@ -16,18 +19,21 @@ import javax.mail.PasswordAuthentication
 import javax.mail.Session
 import javax.mail.Transport
 import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeBodyPart
 import javax.mail.internet.MimeMessage
+import javax.mail.internet.MimeMultipart
 
 class EmailLogger(
     private val smtpConfig: SmtpConfig,
+    val formatter: LogMessageFormatter = DefaultLogMessageFormatter,
 ) : ILogger {
 
     companion object {
         private const val EMAIL_LOGGER_TAG = "EmailLogger"
+        private const val LOG_FILE_NAME = "logs.txt"
     }
 
     private lateinit var context: Context
-    private val logBuffer = StringBuilder()
     private var logCount = 0
     private var lastSentTime = System.currentTimeMillis()
     private var lastFailedAttempt = 0L
@@ -43,11 +49,22 @@ class EmailLogger(
         this.context = context.applicationContext
     }
 
-    override fun log(logEntry: LogEntry) {
-        logBuffer.appendLine("[${logEntry.logType}] ${logEntry.tag}: ${logEntry.message}")
-        logEntry.throwable?.let {
-            logBuffer.appendLine(Log.getStackTraceString(it))
+    fun writeLogsToTheFile(context: Context, logEntry: LogEntry) {
+        val logFile = File(context.filesDir, LOG_FILE_NAME)
+        logFile.appendText(formatter.format(logEntry))
+    }
+
+    fun clearLogFile(context: Context) {
+        val file = getLogFile(context)
+        if (file.exists()) {
+            file.writeText("")
         }
+    }
+
+    fun getLogFile(context: Context) = File(context.filesDir, LOG_FILE_NAME)
+
+    override fun log(logEntry: LogEntry) {
+        writeLogsToTheFile(context, logEntry)
 
         when (smtpConfig.thresholdType) {
             ThresholdType.Counter -> {
@@ -102,11 +119,17 @@ class EmailLogger(
             isSending = true
             CoroutineScope(Dispatchers.IO).launch {
                 try {
+                    val logFile = getLogFile(context)
+                    if (!logFile.exists() || logFile.length() == 0L) {
+                        onResult(false, "Log file is empty.")
+                        return@launch
+                    }
+
                     val props = Properties().apply {
                         put("mail.smtp.auth", "true")
                         put("mail.smtp.starttls.enable", if (smtpConfig.useSSL) "true" else "false")
-                        put("mail.smtp.host", smtpConfig.smtpHost)
-                        put("mail.smtp.port", smtpConfig.smtpPort.toString())
+                        put("mail.smtp.host", smtpConfig.host)
+                        put("mail.smtp.port", smtpConfig.port)
                     }
 
                     val session = Session.getInstance(props, object : Authenticator() {
@@ -125,11 +148,21 @@ class EmailLogger(
                             InternetAddress.parse(smtpConfig.recipientEmail)
                         )
                         subject = "App Logs"
-                        setText(logBuffer.toString())
+
+                        val multipart = MimeMultipart()
+                        val textPart = MimeBodyPart().apply {
+                            setText("Attached is the latest log file.")
+                        }
+                        multipart.addBodyPart(textPart)
+                        val attachmentPart = MimeBodyPart().apply {
+                            attachFile(logFile)
+                        }
+                        multipart.addBodyPart(attachmentPart)
+                        setContent(multipart)
                     }
 
                     Transport.send(message)
-                    logBuffer.clear()
+                    clearLogFile(context)
                     onResult(true, null)
                 } catch (e: Exception) {
                     onResult(false, e.message)
