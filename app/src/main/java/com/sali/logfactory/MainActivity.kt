@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         LogFactory.log(
-            logType = LogType.Info, // Specify the type of the log you are using
+            logType = LogType.Info,
             tag = "Log tag",
             message = "Log message"
         )
@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
                 logType = LogType.Error,
                 tag = "Log tag",
                 message = "Log message",
-                throwable = ioException // You can add an exception or a throwable into the log
+                throwable = ioException
             )
         }
 
