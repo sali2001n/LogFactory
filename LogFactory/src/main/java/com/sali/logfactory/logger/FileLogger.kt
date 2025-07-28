@@ -10,6 +10,8 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.RequiresApi
+import com.sali.logfactory.formatter.DefaultLogMessageFormatter
+import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.FileLoggerConfig
 import com.sali.logfactory.models.LogEntry
 import kotlinx.coroutines.CoroutineScope
@@ -26,9 +28,18 @@ import java.io.FileWriter
  *
  * This logger supports clearing the file on app launch and handles concurrent access.
  *
+ * Initialization:
+ * ```
+ * LogFactory.configureLoggers(context, FileLogger(fileLoggerConfig))
+ * ```
+ *
  * @param config Configuration for file logging (e.g., file name, formatter, directories, and flags).
+ * @param formatter Formats the [LogEntry] into a string to be saved in the log file.
  */
-class FileLogger(val config: FileLoggerConfig) : ILogger {
+class FileLogger(
+    val config: FileLoggerConfig,
+    val formatter: LogMessageFormatter = DefaultLogMessageFormatter,
+) : ILogger {
 
     companion object {
         private const val FILE_LOGGER_TAG = "FileLogger"
@@ -70,7 +81,7 @@ class FileLogger(val config: FileLoggerConfig) : ILogger {
             val currentLogFile = logFile!!
             val currentAppContext = appContext!!
 
-            val formattedMessage = config.formatter.format(logEntry)
+            val formattedMessage = formatter.format(logEntry)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 loggingMechanismForApiVersion29AndAbove(
