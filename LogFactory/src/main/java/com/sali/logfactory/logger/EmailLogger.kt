@@ -25,6 +25,23 @@ import javax.mail.internet.MimeBodyPart
 import javax.mail.internet.MimeMessage
 import javax.mail.internet.MimeMultipart
 
+/**
+ * EmailLogger is an implementation of [ILogger] that collects logs and sends them via email
+ * through an SMTP server when a certain threshold is met. The logs are first written to a local file
+ * and then attached as a file to the outgoing email.
+ *
+ * Supports two threshold types via [ThresholdType] in [EmailLoggerConfig]:
+ * - [ThresholdType.Counter]: Sends logs when a certain number of log entries have been accumulated.
+ * - [ThresholdType.Timer]: Sends logs periodically based on time interval.
+ *
+ * Initialization:
+ * ```
+ * LogFactory.configureLoggers(context, EmailLogger(emailLoggerConfig))
+ * ```
+ *
+ * @param emailLoggerConfig Configuration for the SMTP server, sender, recipient, and thresholds.
+ * @param formatter Formats the [LogEntry] into a string to be saved in the log file.
+ */
 class EmailLogger(
     private val emailLoggerConfig: EmailLoggerConfig,
     val formatter: LogMessageFormatter = DefaultLogMessageFormatter,
@@ -101,7 +118,7 @@ class EmailLogger(
         }
     }
 
-    fun sendLogsViaSmtp(onResult: (Boolean, String?) -> Unit) {
+    private fun sendLogsViaSmtp(onResult: (Boolean, String?) -> Unit) {
         if (!isSending) {
             isSending = true
             loggerScope.launch {
