@@ -21,7 +21,12 @@ import java.io.File
 import java.io.FileWriter
 
 /**
- * @param config Configuration for file logging (paths, filename).
+ * A file-based logger implementation that writes formatted log entries to a file,
+ * supporting both legacy and scoped storage APIs (pre and post Android Q).
+ *
+ * This logger supports clearing the file on app launch and handles concurrent access.
+ *
+ * @param config Configuration for file logging (e.g., file name, formatter, directories, and flags).
  */
 class FileLogger(val config: FileLoggerConfig) : ILogger {
 
@@ -146,8 +151,8 @@ class FileLogger(val config: FileLoggerConfig) : ILogger {
                 }
             }
 
+            // Find or create URI
             var uri: Uri? = null
-
             resolver.query(contentUri, null, selection, selectionArgs, null)
                 ?.use { cursor ->
                     if (cursor.moveToFirst()) {
