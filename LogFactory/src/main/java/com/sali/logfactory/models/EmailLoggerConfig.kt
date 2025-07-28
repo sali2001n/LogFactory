@@ -1,11 +1,11 @@
 package com.sali.logfactory.models
 
-data class SmtpConfig(
+data class EmailLoggerConfig(
     val thresholdType: ThresholdType,
     val logCountThreshold: Int = 10,
     val timeThresholdMillis: Long = 5 * 60 * 1000L, // 5 minutes
-    val host: String = "smtp.gmail.com",
-    val port: Int = 587,
+    val smtpHost: String = "smtp.gmail.com",
+    val smtpPort: Int = 587,
     val senderEmail: String,
     val senderPassword: String,
     val recipientEmail: String,

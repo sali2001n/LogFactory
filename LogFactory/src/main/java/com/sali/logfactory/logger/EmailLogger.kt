@@ -4,8 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.sali.logfactory.formatter.DefaultLogMessageFormatter
 import com.sali.logfactory.formatter.LogMessageFormatter
+import com.sali.logfactory.models.EmailLoggerConfig
 import com.sali.logfactory.models.LogEntry
-import com.sali.logfactory.models.SmtpConfig
 import com.sali.logfactory.models.ThresholdType
 import com.sali.logfactory.util.StorageManager
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +26,7 @@ import javax.mail.internet.MimeMessage
 import javax.mail.internet.MimeMultipart
 
 class EmailLogger(
-    private val smtpConfig: SmtpConfig,
+    private val emailLoggerConfig: EmailLoggerConfig,
     val formatter: LogMessageFormatter = DefaultLogMessageFormatter,
 ) : ILogger {
 
@@ -53,10 +53,10 @@ class EmailLogger(
     override fun log(logEntry: LogEntry) {
         StorageManager.writeLogsToTheFile(context, formatter.format(logEntry))
 
-        when (smtpConfig.thresholdType) {
+        when (emailLoggerConfig.thresholdType) {
             ThresholdType.Counter -> {
                 logCount.incrementAndGet()
-                if (logCount.get() >= smtpConfig.logCountThreshold) {
+                if (logCount.get() >= emailLoggerConfig.logCountThreshold) {
                     sendLogsViaSmtp { result, message ->
                         handleSendResult(
                             result = result,
@@ -69,7 +69,7 @@ class EmailLogger(
 
             ThresholdType.Timer -> {
                 val now = System.currentTimeMillis()
-                if (now - lastSentTime.get() >= smtpConfig.timeThresholdMillis && // Check for interval
+                if (now - lastSentTime.get() >= emailLoggerConfig.timeThresholdMillis && // Check for interval
                     now - lastFailedAttempt.get() >= retryDelayMillis // Check for failed attempts
                 ) {
                     sendLogsViaSmtp { result, message ->
@@ -114,25 +114,28 @@ class EmailLogger(
 
                     val props = Properties().apply {
                         put("mail.smtp.auth", "true")
-                        put("mail.smtp.starttls.enable", if (smtpConfig.useSSL) "true" else "false")
-                        put("mail.smtp.host", smtpConfig.host)
-                        put("mail.smtp.port", smtpConfig.port)
+                        put(
+                            "mail.smtp.starttls.enable",
+                            if (emailLoggerConfig.useSSL) "true" else "false"
+                        )
+                        put("mail.smtp.host", emailLoggerConfig.smtpHost)
+                        put("mail.smtp.port", emailLoggerConfig.smtpPort)
                     }
 
                     val session = Session.getInstance(props, object : Authenticator() {
                         override fun getPasswordAuthentication(): PasswordAuthentication {
                             return PasswordAuthentication(
-                                smtpConfig.senderEmail,
-                                smtpConfig.senderPassword
+                                emailLoggerConfig.senderEmail,
+                                emailLoggerConfig.senderPassword
                             )
                         }
                     })
 
                     val message = MimeMessage(session).apply {
-                        setFrom(InternetAddress(smtpConfig.senderEmail))
+                        setFrom(InternetAddress(emailLoggerConfig.senderEmail))
                         setRecipients(
                             Message.RecipientType.TO,
-                            InternetAddress.parse(smtpConfig.recipientEmail)
+                            InternetAddress.parse(emailLoggerConfig.recipientEmail)
                         )
                         subject = "App Logs"
 
