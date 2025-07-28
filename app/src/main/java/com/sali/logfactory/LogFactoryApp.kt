@@ -5,7 +5,7 @@ import com.sali.logfactory.factory.LogFactory
 import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.logger.EmailLogger
 import com.sali.logfactory.logger.FileLogger
-import com.sali.logfactory.models.LogConfig
+import com.sali.logfactory.models.FileLoggerConfig
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.SmtpConfig
 import com.sali.logfactory.models.ThresholdType
@@ -27,16 +27,18 @@ class LogFactoryApp : Application() {
             // Use custom log message formatter
             // formatter = CustomFormatter()
         )
-        val fileLogger = FileLogger()
 
-        LogFactory.configureLoggers(
-            context = this,
-            config = LogConfig(
+        val fileLogger = FileLogger(
+            config = FileLoggerConfig(
                 // Use custom log message formatter
                 // formatter = CustomFormatter()
                 // Clear the old logs every time app launched
                 // clearFileWhenAppLaunched = true
-            ),
+            )
+        )
+
+        LogFactory.configureLoggers(
+            context = this,
             enabledLoggers = arrayOf(fileLogger, emailLogger)
         )
     }

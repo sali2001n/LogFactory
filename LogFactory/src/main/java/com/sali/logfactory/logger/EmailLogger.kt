@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import com.sali.logfactory.formatter.DefaultLogMessageFormatter
 import com.sali.logfactory.formatter.LogMessageFormatter
-import com.sali.logfactory.models.LogConfig
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.SmtpConfig
 import com.sali.logfactory.models.ThresholdType
@@ -47,7 +46,6 @@ class EmailLogger(
 
     override fun initialize(
         context: Context,
-        config: LogConfig,
     ) {
         this.context = context.applicationContext
     }

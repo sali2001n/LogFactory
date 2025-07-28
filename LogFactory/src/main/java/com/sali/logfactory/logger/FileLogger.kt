@@ -10,7 +10,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.RequiresApi
-import com.sali.logfactory.models.LogConfig
+import com.sali.logfactory.models.FileLoggerConfig
 import com.sali.logfactory.models.LogEntry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,22 +20,23 @@ import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.FileWriter
 
-class FileLogger : ILogger {
+/**
+ * @param config Configuration for file logging (paths, filename).
+ */
+class FileLogger(val config: FileLoggerConfig) : ILogger {
 
     companion object {
         private const val FILE_LOGGER_TAG = "FileLogger"
     }
 
     private var logFile: File? = null
-    private var logConfig: LogConfig? = null
     private var appContext: Context? = null
 
     private val clearLogsFileMutex = Mutex()
     private var isFileClearedThisSession = false
 
-    override fun initialize(context: Context, config: LogConfig) {
+    override fun initialize(context: Context) {
         this.appContext = context.applicationContext
-        this.logConfig = config
 
         if (isExternalStorageWritable()) {
             val directory =
@@ -61,21 +62,18 @@ class FileLogger : ILogger {
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            val currentLogConfig = logConfig!!
             val currentLogFile = logFile!!
             val currentAppContext = appContext!!
 
-            val formattedMessage = currentLogConfig.formatter.format(logEntry)
+            val formattedMessage = config.formatter.format(logEntry)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 loggingMechanismForApiVersion29AndAbove(
-                    currentLogConfig = currentLogConfig,
                     currentAppContext = currentAppContext,
                     formattedMessage = formattedMessage
                 )
             } else {
                 loggingMechanismForApiVersionBelow29(
-                    currentLogConfig = currentLogConfig,
                     currentLogFile = currentLogFile,
                     formattedMessage = formattedMessage
                 )
@@ -120,7 +118,6 @@ class FileLogger : ILogger {
 
     @RequiresApi(Build.VERSION_CODES.Q)
     private suspend fun loggingMechanismForApiVersion29AndAbove(
-        currentLogConfig: LogConfig,
         currentAppContext: Context,
         formattedMessage: String,
     ) {
@@ -129,13 +126,13 @@ class FileLogger : ILogger {
             val contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
 
             val mediaStoreRelativePath =
-                "${currentLogConfig.parentDirectoryPath}/${currentLogConfig.childDirectoryPath}/"
+                "${config.parentDirectoryPath}/${config.childDirectoryPath}/"
 
             val selection =
                 "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND ${MediaStore.MediaColumns.DISPLAY_NAME}=?"
-            val selectionArgs = arrayOf(mediaStoreRelativePath, currentLogConfig.fileName)
+            val selectionArgs = arrayOf(mediaStoreRelativePath, config.fileName)
 
-            if (currentLogConfig.clearFileWhenAppLaunched) {
+            if (config.clearFileWhenAppLaunched) {
                 clearLogsFileMutex.withLock {
                     if (!isFileClearedThisSession) {
                         deleteOldLogsFile(
@@ -162,7 +159,7 @@ class FileLogger : ILogger {
 
             if (uri == null) {
                 val contentValues = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, currentLogConfig.fileName)
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, config.fileName)
                     put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
                     put(MediaStore.MediaColumns.RELATIVE_PATH, mediaStoreRelativePath)
                 }
@@ -185,12 +182,11 @@ class FileLogger : ILogger {
     }
 
     private suspend fun loggingMechanismForApiVersionBelow29(
-        currentLogConfig: LogConfig,
         currentLogFile: File,
         formattedMessage: String,
     ) {
         try {
-            if (currentLogConfig.clearFileWhenAppLaunched) {
+            if (config.clearFileWhenAppLaunched) {
                 clearLogsFileMutex.withLock {
                     if (!isFileClearedThisSession) {
                         val deleteResult = currentLogFile.delete()
@@ -213,7 +209,7 @@ class FileLogger : ILogger {
     }
 
     private fun isInitialized(): Boolean =
-        logFile != null && logConfig != null && appContext != null
+        logFile != null && appContext != null
 
     private fun isExternalStorageWritable() =
         Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED

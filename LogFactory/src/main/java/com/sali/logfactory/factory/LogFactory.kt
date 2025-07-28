@@ -3,7 +3,6 @@ package com.sali.logfactory.factory
 import android.content.Context
 import android.util.Log
 import com.sali.logfactory.logger.ILogger
-import com.sali.logfactory.models.LogConfig
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.LogType
 import java.util.Date
@@ -19,12 +18,10 @@ object LogFactory {
      * This method should be called once, typically in your Application's onCreate.
      *
      * @param context Application context, used for file operations (MediaStore).
-     * @param config Configuration for file logging (paths, filename).
      * @param enabledLoggers A vararg list of ILogger instances to enable.
      */
     fun configureLoggers(
         context: Context,
-        config: LogConfig = LogConfig(),
         vararg enabledLoggers: ILogger,
     ) {
         if (isConfigured) {
@@ -36,7 +33,7 @@ object LogFactory {
 
         enabledLoggers.forEach { logger ->
             try {
-                logger.initialize(context, config)
+                logger.initialize(context)
                 loggers.add(logger)
             } catch (e: Exception) {
                 Log.e(
