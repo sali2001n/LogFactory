@@ -9,7 +9,7 @@ import java.io.IOException
 object StorageManager {
 
     private const val LOG_FILE_NAME = "logs.txt"
-    private const val STORAGE_MANAGER_TAG = "EmailLogger"
+    private const val STORAGE_MANAGER_TAG = "StorageManager"
 
     fun getLogFile(context: Context) = File(context.filesDir, LOG_FILE_NAME)
 
