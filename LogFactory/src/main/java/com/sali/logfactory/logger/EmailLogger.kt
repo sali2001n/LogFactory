@@ -39,11 +39,11 @@ import javax.mail.internet.MimeMultipart
  * LogFactory.configureLoggers(context, EmailLogger(emailLoggerConfig))
  * ```
  *
- * @param emailLoggerConfig Configuration for the SMTP server, sender, recipient, and thresholds.
+ * @param config Configuration for the SMTP server, sender, recipient, and thresholds.
  * @param formatter Formats the [LogEntry] into a string to be saved in the log file.
  */
 class EmailLogger(
-    private val emailLoggerConfig: EmailLoggerConfig,
+    private val config: EmailLoggerConfig,
     val formatter: LogMessageFormatter = DefaultLogMessageFormatter,
 ) : ILogger {
 
@@ -70,10 +70,10 @@ class EmailLogger(
     override fun log(logEntry: LogEntry) {
         StorageManager.writeLogsToTheFile(context, formatter.format(logEntry))
 
-        when (emailLoggerConfig.thresholdType) {
+        when (config.thresholdType) {
             ThresholdType.Counter -> {
                 logCount.incrementAndGet()
-                if (logCount.get() >= emailLoggerConfig.logCountThreshold) {
+                if (logCount.get() >= config.logCountThreshold) {
                     sendLogsViaSmtp { result, message ->
                         handleSendResult(
                             result = result,
@@ -86,7 +86,7 @@ class EmailLogger(
 
             ThresholdType.Timer -> {
                 val now = System.currentTimeMillis()
-                if (now - lastSentTime.get() >= emailLoggerConfig.timeThresholdMillis && // Check for interval
+                if (now - lastSentTime.get() >= config.timeThresholdMillis && // Check for interval
                     now - lastFailedAttempt.get() >= retryDelayMillis // Check for failed attempts
                 ) {
                     sendLogsViaSmtp { result, message ->
@@ -133,26 +133,26 @@ class EmailLogger(
                         put("mail.smtp.auth", "true")
                         put(
                             "mail.smtp.starttls.enable",
-                            if (emailLoggerConfig.useSSL) "true" else "false"
+                            if (config.useSSL) "true" else "false"
                         )
-                        put("mail.smtp.host", emailLoggerConfig.smtpHost)
-                        put("mail.smtp.port", emailLoggerConfig.smtpPort)
+                        put("mail.smtp.host", config.smtpHost)
+                        put("mail.smtp.port", config.smtpPort)
                     }
 
                     val session = Session.getInstance(props, object : Authenticator() {
                         override fun getPasswordAuthentication(): PasswordAuthentication {
                             return PasswordAuthentication(
-                                emailLoggerConfig.senderEmail,
-                                emailLoggerConfig.senderPassword
+                                config.senderEmail,
+                                config.senderPassword
                             )
                         }
                     })
 
                     val message = MimeMessage(session).apply {
-                        setFrom(InternetAddress(emailLoggerConfig.senderEmail))
+                        setFrom(InternetAddress(config.senderEmail))
                         setRecipients(
                             Message.RecipientType.TO,
-                            InternetAddress.parse(emailLoggerConfig.recipientEmail)
+                            InternetAddress.parse(config.recipientEmail)
                         )
                         subject = "App Logs"
 

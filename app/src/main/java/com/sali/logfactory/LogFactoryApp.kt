@@ -14,7 +14,7 @@ class LogFactoryApp : Application() {
         super.onCreate()
 
         val emailLogger = EmailLogger(
-            emailLoggerConfig = EmailLoggerConfig(
+            config = EmailLoggerConfig(
                 thresholdType = ThresholdType.Counter,
                 logCountThreshold = 3,
                 senderEmail = "sender@gmail.com",
