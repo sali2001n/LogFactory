@@ -1,15 +1,17 @@
-# 📄 FileLogger Android
+# 📄 LogFactory Android
 
-**FileLogger** is a lightweight and customizable logging library for Android. Supports Android 5 (API 21) and above, with scoped storage compatibility (Android 10+).
+**LogFactory** is a lightweight and customizable logging library for Android. Supports Android 5 (API 21) and above, with scoped storage compatibility (Android 10+).
 
 ---
 
 ## 🚀 Features
 
 - ✅ Write logs to a file.
+- ✅ Send logs via email (SMTP).
+- ✅ Customizable log formatting.
 - ✅ Scoped Storage support for Android 10+.
-- ✅ Custom log message formatting.
 - ✅ Auto-clear log file.
+- ✅ Easy integration and configuration.
 
 ---
 
@@ -37,16 +39,21 @@
 
 ### 1. Initialize the logger (e.g., in your `Application` class):
 
-<pre><code>LogFactory.configureLoggers(    
+<pre><code>val emailLogger = EmailLogger(
+    config = EmailLoggerConfig(
+        thresholdType = ThresholdType.Counter,
+        logCountThreshold = 3,
+        senderEmail = "sender@gmail.com",
+        senderPassword = "sender password",
+        recipientEmail = "recepient@gmail.com",
+        )
+    )
+
+val fileLogger = FileLogger(config = FileLoggerConfig())
+
+LogFactory.configureLoggers(
     context = this,
-    config = LogConfig(
-        fileName = "my_app_log.txt",
-        parentDirectoryPath = "MyAppLogs",
-        childDirectoryPath = "Logs",
-        formatter = DefaultLogMessageFormatter, // or your custom implementation
-        clearFileWhenAppLaunched = true // optional
-    ),
-    enabledLoggers = arrayOf(FileLogger())
+    enabledLoggers = arrayOf(fileLogger, emailLogger)
 )
 </code></pre>
 
@@ -99,9 +106,18 @@ No special permissions are required. The library uses `MediaStore` and scoped st
 
 ---
 
+## ⚠️ Security
+
+🔑 **Do NOT hard-code your email password or app-specific password directly in your source code.**
+Instead, store sensitive information in a more secure way, for example:
+- Encrypted SharedPreferences
+- Android Keystore
+
+---
+
 ## 📁 Default Log File Location
 
-  Default behaviour saves logs in the `Downloads` folder. Visible to users and file managers.
+Default behaviour saves logs in the `Downloads` folder. Visible to users and file managers.
 
 ---
 
@@ -110,13 +126,12 @@ No special permissions are required. The library uses `MediaStore` and scoped st
 - 💾 Set `clearFileWhenAppLaunched = true` to remove old logs at app launch.
 - 🐛 Add throwable to `LogFactory.log` to detect bugs more easily.
 
-
 ---
 
 ## 🧰 Planned Features
 
-- Implement Log Composable
-- Export/share log file
+- ☐ Implement Log Composable
+- 🗹 Share log file via Email
 
 ---
 
