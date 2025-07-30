@@ -2,6 +2,7 @@ package com.sali.logfactory
 
 import android.app.Application
 import com.sali.logfactory.factory.LogFactory
+import com.sali.logfactory.formatter.DefaultLogMessageFormatter
 import com.sali.logfactory.logger.EmailLogger
 import com.sali.logfactory.logger.FileLogger
 import com.sali.logfactory.logger.LogcatLogger
@@ -25,7 +26,7 @@ class LogFactoryApp : Application() {
         )
 
         val fileLogger = FileLogger(config = FileLoggerConfig())
-        val logcatLogger = LogcatLogger()
+        val logcatLogger = LogcatLogger(formatter = DefaultLogMessageFormatter)
 
         LogFactory.configureLoggers(
             context = this,
