@@ -1,4 +1,4 @@
-# 📄 LogFactory Android
+# 🪵 LogFactory Android
 
 **LogFactory** is a lightweight and customizable logging library for Android. Supports Android 5 (API 21) and above, with scoped storage compatibility (Android 10+).
 
@@ -8,6 +8,7 @@
 
 - ✅ Write logs to a file.
 - ✅ Send logs via email (SMTP).
+- ✅ Output logs to Android Logcat
 - ✅ Customizable log formatting.
 - ✅ Scoped Storage support for Android 10+.
 - ✅ Auto-clear log file.
@@ -50,10 +51,10 @@
     )
 
 val fileLogger = FileLogger(config = FileLoggerConfig())
-
+val logcatLogger = LogcatLogger()
 LogFactory.configureLoggers(
     context = this,
-    enabledLoggers = arrayOf(fileLogger, emailLogger)
+    enabledLoggers = arrayOf(fileLogger, emailLogger, logcatLogger)
 )
 </code></pre>
 
@@ -125,13 +126,6 @@ Default behaviour saves logs in the `Downloads` folder. Visible to users and fil
 
 - 💾 Set `clearFileWhenAppLaunched = true` to remove old logs at app launch.
 - 🐛 Add throwable to `LogFactory.log` to detect bugs more easily.
-
----
-
-## 🧰 Planned Features
-
-- ☐ Implement Log Composable
-- 🗹 Share log file via Email
 
 ---
 
