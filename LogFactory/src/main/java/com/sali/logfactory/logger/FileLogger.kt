@@ -33,8 +33,8 @@ import java.io.FileWriter
  * LogFactory.configureLoggers(context, FileLogger(fileLoggerConfig))
  * ```
  *
- * @param config Configuration for file logging (e.g., file name, formatter, directories, and flags).
- * @param formatter Formats the [LogEntry] into a string to be saved in the log file.
+ * @property config Configuration for file logging (e.g., file name, formatter, directories, and flags).
+ * @property formatter Formats the [LogEntry] into a string to be saved in the log file.
  */
 class FileLogger(
     val config: FileLoggerConfig,

@@ -39,8 +39,8 @@ import javax.mail.internet.MimeMultipart
  * LogFactory.configureLoggers(context, EmailLogger(emailLoggerConfig))
  * ```
  *
- * @param config Configuration for the SMTP server, sender, recipient, and thresholds.
- * @param formatter Formats the [LogEntry] into a string to be saved in the log file.
+ * @property config Configuration for the SMTP server, sender, recipient, and thresholds.
+ * @property formatter Formats the [LogEntry] into a string to be saved in the log file.
  */
 class EmailLogger(
     private val config: EmailLoggerConfig,
