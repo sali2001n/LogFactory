@@ -1,6 +1,5 @@
 package com.sali.logfactory.logger
 
-import android.content.Context
 import android.util.Log
 import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.LogEntry
@@ -23,10 +22,6 @@ import com.sali.logfactory.models.LogType
  * @property formatter Optional [LogMessageFormatter] to customize the log format.
  */
 class LogcatLogger(val formatter: LogMessageFormatter? = null) : ILogger {
-
-    override fun initialize(context: Context) {
-        // No need for specific initialization
-    }
 
     /**
      * Logs a message to Logcat or prints a custom-formatted message using [formatter].

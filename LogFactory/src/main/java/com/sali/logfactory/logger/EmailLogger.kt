@@ -45,7 +45,7 @@ import javax.mail.internet.MimeMultipart
 class EmailLogger(
     private val config: EmailLoggerConfig,
     val formatter: LogMessageFormatter = DefaultLogMessageFormatter,
-) : ILogger {
+) : ILogger, FactoryInitializer {
 
     companion object {
         private const val EMAIL_LOGGER_TAG = "EmailLogger"
