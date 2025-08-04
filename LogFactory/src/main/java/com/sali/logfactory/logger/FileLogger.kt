@@ -39,7 +39,7 @@ import java.io.FileWriter
 class FileLogger(
     val config: FileLoggerConfig,
     val formatter: LogMessageFormatter = DefaultLogMessageFormatter,
-) : ILogger, FactoryInitializer {
+) : ILogger, LoggerInitializer {
 
     companion object {
         private const val FILE_LOGGER_TAG = "FileLogger"

@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.sali.logfactory.factory.LogFactory.configureLoggers
 import com.sali.logfactory.factory.LogFactory.shutdown
-import com.sali.logfactory.logger.FactoryInitializer
+import com.sali.logfactory.logger.LoggerInitializer
 import com.sali.logfactory.logger.ILogger
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.LogType
@@ -56,7 +56,7 @@ object LogFactory {
 
         enabledLoggers.forEach { logger ->
             try {
-                if (logger is FactoryInitializer)
+                if (logger is LoggerInitializer)
                     logger.initialize(context)
 
                 loggers.add(logger)

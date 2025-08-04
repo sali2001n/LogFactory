@@ -2,7 +2,7 @@ package com.sali.logfactory.logger
 
 import android.content.Context
 
-interface FactoryInitializer {
+interface LoggerInitializer {
 
     /**
      * Initializes the logger.
