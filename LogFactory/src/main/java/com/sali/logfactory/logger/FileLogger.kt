@@ -1,6 +1,5 @@
 package com.sali.logfactory.logger
 
-import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
@@ -14,6 +13,7 @@ import com.sali.logfactory.formatter.DefaultLogMessageFormatter
 import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.FileLoggerConfig
 import com.sali.logfactory.models.LogEntry
+import com.sali.logfactory.util.StorageManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -54,7 +54,7 @@ class FileLogger(
     override fun initialize(context: Context) {
         this.appContext = context.applicationContext
 
-        if (isExternalStorageWritable()) {
+        if (StorageManager.isExternalStorageWritable()) {
             val directory =
                 Environment.getExternalStoragePublicDirectory(config.parentDirectoryPath)
             val logDir = File(directory, config.childDirectoryPath)
@@ -97,41 +97,6 @@ class FileLogger(
         }
     }
 
-    private fun deleteOldLogsFile(
-        resolver: ContentResolver,
-        contentUri: Uri,
-        selection: String,
-        selectionArgs: Array<String>,
-    ) {
-        resolver.query(
-            contentUri,
-            arrayOf(MediaStore.MediaColumns._ID),
-            selection,
-            selectionArgs,
-            null
-        )?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val id =
-                    cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
-                val uriToDelete = ContentUris.withAppendedId(contentUri, id)
-                try {
-                    resolver.delete(uriToDelete, null, null)
-                    Log.d(
-                        FILE_LOGGER_TAG,
-                        "Existing log file deleted successfully."
-                    )
-                } catch (e: Exception) {
-                    Log.e(
-                        FILE_LOGGER_TAG,
-                        "Error deleting existing log file.",
-                        e
-                    )
-                }
-            }
-        }
-        isFileClearedThisSession = true
-    }
-
     @RequiresApi(Build.VERSION_CODES.Q)
     private suspend fun loggingMechanismForApiVersion29AndAbove(
         currentAppContext: Context,
@@ -151,13 +116,18 @@ class FileLogger(
             if (config.clearFileWhenAppLaunched) {
                 clearLogsFileMutex.withLock {
                     if (!isFileClearedThisSession) {
-                        deleteOldLogsFile(
-                            resolver = resolver,
-                            contentUri = contentUri,
-                            selection = selection,
-                            selectionArgs = selectionArgs
+                        val deleteResult = StorageManager.deleteFileFromMediaStore(
+                            context = currentAppContext,
+                            contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                            relativePath = mediaStoreRelativePath,
+                            fileName = config.fileName
                         )
-                        isFileClearedThisSession = true
+                        if (deleteResult) {
+                            isFileClearedThisSession = true
+                        } else {
+                            Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29>=")
+                            isFileClearedThisSession = false
+                        }
                     }
                 }
             }
@@ -206,13 +176,15 @@ class FileLogger(
                 clearLogsFileMutex.withLock {
                     if (!isFileClearedThisSession) {
                         val deleteResult = currentLogFile.delete()
-                        if (!deleteResult)
+                        if (deleteResult) {
+                            isFileClearedThisSession = true
+                        } else {
                             Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29<")
-                        isFileClearedThisSession = true
-                        true
-                    } else false
+                            isFileClearedThisSession = false
+                        }
+                    }
                 }
-            } else false
+            }
 
             val writer = FileWriter(currentLogFile, true)
             writer.use {
@@ -226,7 +198,4 @@ class FileLogger(
 
     private fun isInitialized(): Boolean =
         logFile != null && appContext != null
-
-    private fun isExternalStorageWritable() =
-        Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
 }

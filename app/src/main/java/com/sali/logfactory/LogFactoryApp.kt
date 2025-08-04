@@ -25,7 +25,7 @@ class LogFactoryApp : Application() {
             )
         )
 
-        val fileLogger = FileLogger(config = FileLoggerConfig())
+        val fileLogger = FileLogger(config = FileLoggerConfig(clearFileWhenAppLaunched = true))
         val logcatLogger = LogcatLogger(formatter = DefaultLogMessageFormatter)
 
         LogFactory.configureLoggers(
