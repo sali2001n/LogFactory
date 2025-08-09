@@ -68,7 +68,7 @@ class EmailLogger(
     }
 
     override fun log(logEntry: LogEntry) {
-        StorageManager.writeLogsToTheFile(context, formatter.format(logEntry))
+        StorageManager.writeLogsToInternalStorageLogFile(context, formatter.format(logEntry))
 
         when (config.thresholdType) {
             ThresholdType.Counter -> {
@@ -123,7 +123,7 @@ class EmailLogger(
             isSending = true
             loggerScope.launch {
                 try {
-                    val logFile = StorageManager.getLogFile(context)
+                    val logFile = StorageManager.getLogFileFromInternalStorage(context)
                     if (!logFile.exists() || logFile.length() == 0L) {
                         onResult(false, "Log file is empty.")
                         return@launch
@@ -169,7 +169,7 @@ class EmailLogger(
                     }
 
                     Transport.send(message)
-                    StorageManager.clearLogFile(context)
+                    StorageManager.clearInternalStorageLogFile(context)
                     onResult(true, null)
                 } catch (e: Exception) {
                     onResult(false, e.message)

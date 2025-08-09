@@ -15,15 +15,15 @@ object StorageManager {
     private const val LOG_FILE_NAME = "logs.txt"
     private const val STORAGE_MANAGER_TAG = "StorageManager"
 
-    fun getLogFile(context: Context) = File(context.filesDir, LOG_FILE_NAME)
+    fun getLogFileFromInternalStorage(context: Context) = File(context.filesDir, LOG_FILE_NAME)
 
-    fun writeLogsToTheFile(context: Context, logs: String) {
-        val logFile = File(context.filesDir, LOG_FILE_NAME)
+    fun writeLogsToInternalStorageLogFile(context: Context, logs: String) {
+        val logFile = getLogFileFromInternalStorage(context)
         logFile.appendText(logs)
     }
 
-    fun clearLogFile(context: Context) {
-        val file = getLogFile(context)
+    fun clearInternalStorageLogFile(context: Context) {
+        val file = getLogFileFromInternalStorage(context)
         if (file.exists()) {
             try {
                 FileOutputStream(file).channel.use { it.truncate(0) }
