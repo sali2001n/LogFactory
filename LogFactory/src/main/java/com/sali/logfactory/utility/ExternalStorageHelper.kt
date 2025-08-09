@@ -11,7 +11,7 @@ object ExternalStorageHelper {
 
     private const val STORAGE_MANAGER_TAG = "ExternalStorageManager"
 
-    fun deleteFileFromMediaStore(
+    internal fun deleteFileFromMediaStore(
         context: Context,
         contentUri: Uri,
         relativePath: String,
@@ -47,7 +47,7 @@ object ExternalStorageHelper {
         }
     }
 
-    fun isExternalStorageWritable() =
+    internal fun isExternalStorageWritable() =
         Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
 
 }
