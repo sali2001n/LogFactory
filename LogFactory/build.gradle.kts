@@ -44,7 +44,7 @@ dependencies {
     testImplementation(libs.junit)
 
     testImplementation(libs.kotlinx.coroutines.test) // Coroutines
-    testImplementation(libs.mockito.core) // Mocking
+    testImplementation(libs.mockito.inline) // Mocking
     testImplementation(libs.mockito.kotlin) // Mocking
     testImplementation(libs.robolectric) // Robolectric
     testImplementation(libs.androidx.core)
