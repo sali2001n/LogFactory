@@ -122,10 +122,9 @@ class FileLogger(
                             relativePath = mediaStoreRelativePath,
                             fileName = config.fileName
                         )
-                        evaluateDeleteFileResult(
-                            deleteResult = deleteResult,
-                            message = "Deletion failed for APIs 29>="
-                        )
+                        isFileClearedThisSession = deleteResult
+                        if (!deleteResult)
+                            Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29>=")
                     }
                 }
             }
@@ -174,10 +173,9 @@ class FileLogger(
                 clearLogsFileMutex.withLock {
                     if (!isFileClearedThisSession) {
                         val deleteResult = currentLogFile.delete()
-                        evaluateDeleteFileResult(
-                            deleteResult = deleteResult,
-                            message = "Deletion failed for APIs 29<"
-                        )
+                        isFileClearedThisSession = deleteResult
+                        if (!deleteResult)
+                            Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29<")
                     }
                 }
             }
@@ -189,15 +187,6 @@ class FileLogger(
             }
         } catch (e: Exception) {
             Log.e(FILE_LOGGER_TAG, "Error writing to log file (old SDK)", e)
-        }
-    }
-
-    private fun evaluateDeleteFileResult(deleteResult: Boolean, message: String) {
-        if (deleteResult) {
-            isFileClearedThisSession = true
-        } else {
-            Log.e(FILE_LOGGER_TAG, message)
-            isFileClearedThisSession = false
         }
     }
 
