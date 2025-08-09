@@ -7,7 +7,7 @@ import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.EmailLoggerConfig
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.ThresholdType
-import com.sali.logfactory.util.StorageManager
+import com.sali.logfactory.utility.InternalStorageHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -68,7 +68,10 @@ class EmailLogger(
     }
 
     override fun log(logEntry: LogEntry) {
-        StorageManager.writeLogsToInternalStorageLogFile(context, formatter.format(logEntry))
+        InternalStorageHelper.writeLogsToInternalStorageLogFile(
+            context,
+            formatter.format(logEntry)
+        )
 
         when (config.thresholdType) {
             ThresholdType.Counter -> {
@@ -123,7 +126,7 @@ class EmailLogger(
             isSending = true
             loggerScope.launch {
                 try {
-                    val logFile = StorageManager.getLogFileFromInternalStorage(context)
+                    val logFile = InternalStorageHelper.getLogFileFromInternalStorage(context)
                     if (!logFile.exists() || logFile.length() == 0L) {
                         onResult(false, "Log file is empty.")
                         return@launch
@@ -169,7 +172,7 @@ class EmailLogger(
                     }
 
                     Transport.send(message)
-                    StorageManager.clearInternalStorageLogFile(context)
+                    InternalStorageHelper.clearInternalStorageLogFile(context)
                     onResult(true, null)
                 } catch (e: Exception) {
                     onResult(false, e.message)

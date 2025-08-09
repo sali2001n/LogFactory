@@ -1,4 +1,4 @@
-package com.sali.logfactory.util
+package com.sali.logfactory.utility
 
 import android.content.ContentUris
 import android.content.Context
@@ -6,32 +6,10 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
 
-object StorageManager {
+object ExternalStorageHelper {
 
-    private const val LOG_FILE_NAME = "logs.txt"
-    private const val STORAGE_MANAGER_TAG = "StorageManager"
-
-    fun getLogFileFromInternalStorage(context: Context) = File(context.filesDir, LOG_FILE_NAME)
-
-    fun writeLogsToInternalStorageLogFile(context: Context, logs: String) {
-        val logFile = getLogFileFromInternalStorage(context)
-        logFile.appendText(logs)
-    }
-
-    fun clearInternalStorageLogFile(context: Context) {
-        val file = getLogFileFromInternalStorage(context)
-        if (file.exists()) {
-            try {
-                FileOutputStream(file).channel.use { it.truncate(0) }
-            } catch (e: IOException) {
-                Log.e(STORAGE_MANAGER_TAG, "Failed to clear log file: ${e.message}")
-            }
-        }
-    }
+    private const val STORAGE_MANAGER_TAG = "ExternalStorageManager"
 
     fun deleteFileFromMediaStore(
         context: Context,

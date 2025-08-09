@@ -13,7 +13,7 @@ import com.sali.logfactory.formatter.DefaultLogMessageFormatter
 import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.FileLoggerConfig
 import com.sali.logfactory.models.LogEntry
-import com.sali.logfactory.util.StorageManager
+import com.sali.logfactory.utility.ExternalStorageHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -54,7 +54,7 @@ class FileLogger(
     override fun initialize(context: Context) {
         this.appContext = context.applicationContext
 
-        if (StorageManager.isExternalStorageWritable()) {
+        if (ExternalStorageHelper.isExternalStorageWritable()) {
             val directory =
                 Environment.getExternalStoragePublicDirectory(config.parentDirectoryPath)
             val logDir = File(directory, config.childDirectoryPath)
@@ -116,7 +116,7 @@ class FileLogger(
             if (config.clearFileWhenAppLaunched) {
                 clearLogsFileMutex.withLock {
                     if (!isFileClearedThisSession) {
-                        val deleteResult = StorageManager.deleteFileFromMediaStore(
+                        val deleteResult = ExternalStorageHelper.deleteFileFromMediaStore(
                             context = currentAppContext,
                             contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                             relativePath = mediaStoreRelativePath,
