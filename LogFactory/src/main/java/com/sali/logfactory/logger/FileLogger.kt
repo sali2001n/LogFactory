@@ -1,7 +1,5 @@
 package com.sali.logfactory.logger
 
-import android.content.ContentUris
-import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -131,34 +129,29 @@ class FileLogger(
 
             // Find or create URI
             var uri: Uri? = null
-            resolver.query(contentUri, null, selection, selectionArgs, null)
-                ?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val id =
-                            cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
-                        uri = ContentUris.withAppendedId(contentUri, id)
-                    }
-                }
+            ExternalStorageHelper.findFileUri(
+                resolver = resolver,
+                contentUri = contentUri,
+                selection = selection,
+                selectionArgs = selectionArgs
+            ) {
+                uri = it
+            }
 
             if (uri == null) {
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, config.fileName)
-                    put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, mediaStoreRelativePath)
-                }
-                uri = resolver.insert(contentUri, contentValues)
+                ExternalStorageHelper.createFileUri(
+                    fileName = config.fileName,
+                    mediaStoreRelativePath = mediaStoreRelativePath,
+                    resolver = resolver,
+                    contentUri = contentUri
+                ) { uri = it }
             }
 
-            uri?.let { fileUri ->
-                resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
-                    outputStream.write(formattedMessage.toByteArray())
-                }
-            } ?: run {
-                Log.e(
-                    FILE_LOGGER_TAG,
-                    "Failed to get or create MediaStore URI for log file."
-                )
-            }
+            ExternalStorageHelper.writeToLogFile(
+                uri = uri,
+                resolver = resolver,
+                message = formattedMessage
+            )
         } catch (e: Exception) {
             Log.e(FILE_LOGGER_TAG, "Error writing to log file via MediaStore", e)
         }
