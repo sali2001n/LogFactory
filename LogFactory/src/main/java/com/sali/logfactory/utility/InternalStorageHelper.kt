@@ -13,11 +13,6 @@ object InternalStorageHelper {
 
     internal fun getLogFileFromInternalStorage(context: Context) = File(context.filesDir, LOG_FILE_NAME)
 
-    internal fun writeLogsToInternalStorageLogFile(context: Context, log: String) {
-        val logFile = getLogFileFromInternalStorage(context)
-        logFile.appendText(log)
-    }
-
     internal fun clearInternalStorageLogFile(context: Context) {
         val file = getLogFileFromInternalStorage(context)
         if (file.exists()) {

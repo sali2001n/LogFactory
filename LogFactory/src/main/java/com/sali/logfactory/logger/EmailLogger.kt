@@ -7,6 +7,7 @@ import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.EmailLoggerConfig
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.ThresholdType
+import com.sali.logfactory.utility.FileHelper
 import com.sali.logfactory.utility.InternalStorageHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,8 +69,8 @@ class EmailLogger(
     }
 
     override fun log(logEntry: LogEntry) {
-        InternalStorageHelper.writeLogsToInternalStorageLogFile(
-            context,
+        FileHelper.writeLogToFile(
+            InternalStorageHelper.getLogFileFromInternalStorage(context),
             formatter.format(logEntry)
         )
 

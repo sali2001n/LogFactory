@@ -12,13 +12,13 @@ import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.FileLoggerConfig
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.utility.ExternalStorageHelper
+import com.sali.logfactory.utility.FileHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
-import java.io.FileWriter
 
 /**
  * A file-based logger implementation that writes formatted log entries to a file,
@@ -147,7 +147,7 @@ class FileLogger(
                 ) { uri = it }
             }
 
-            ExternalStorageHelper.writeToLogFile(
+            FileHelper.writeToLogFile(
                 uri = uri,
                 resolver = resolver,
                 message = formattedMessage
@@ -173,11 +173,10 @@ class FileLogger(
                 }
             }
 
-            val writer = FileWriter(currentLogFile, true)
-            writer.use {
-                it.append(formattedMessage)
-                it.flush()
-            }
+            FileHelper.writeLogToFile(
+                file = currentLogFile,
+                message = formattedMessage
+            )
         } catch (e: Exception) {
             Log.e(FILE_LOGGER_TAG, "Error writing to log file (old SDK)", e)
         }

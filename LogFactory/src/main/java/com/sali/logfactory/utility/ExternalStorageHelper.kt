@@ -47,19 +47,6 @@ object ExternalStorageHelper {
         onCreateUri(uri)
     }
 
-    internal fun writeToLogFile(uri: Uri?, resolver: ContentResolver, message: String) {
-        uri?.let { fileUri ->
-            resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
-                outputStream.write(message.toByteArray())
-            }
-        } ?: run {
-            Log.e(
-                STORAGE_MANAGER_TAG,
-                "Failed to get or create MediaStore URI for log file."
-            )
-        }
-    }
-
     internal fun deleteFileFromMediaStore(
         context: Context,
         contentUri: Uri,
