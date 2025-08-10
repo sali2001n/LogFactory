@@ -70,7 +70,7 @@ class EmailLogger(
 
     override fun log(logEntry: LogEntry) {
         FileHelper.writeLogToFile(
-            InternalStorageHelper.getLogFileFromInternalStorage(context),
+            InternalStorageHelper.getLogFile(context),
             formatter.format(logEntry)
         )
 
@@ -127,7 +127,7 @@ class EmailLogger(
             isSending = true
             loggerScope.launch {
                 try {
-                    val logFile = InternalStorageHelper.getLogFileFromInternalStorage(context)
+                    val logFile = InternalStorageHelper.getLogFile(context)
                     if (!logFile.exists() || logFile.length() == 0L) {
                         onResult(false, "Log file is empty.")
                         return@launch
@@ -173,7 +173,10 @@ class EmailLogger(
                     }
 
                     Transport.send(message)
-                    InternalStorageHelper.clearInternalStorageLogFile(context)
+                    logFile.delete().also {
+                        if (!it)
+                            Log.e(EMAIL_LOGGER_TAG, "Failed to delete log file")
+                    }
                     onResult(true, null)
                 } catch (e: Exception) {
                     onResult(false, e.message)
