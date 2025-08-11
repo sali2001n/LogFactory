@@ -115,7 +115,9 @@ class FileLogger(
                 clearLogsFileMutex.withLock {
                     if (!isFileClearedThisSession) {
                         val deleteResult = ExternalStorageHelper.deleteFileFromMediaStore(
-                            context = currentAppContext,
+                            resolver = resolver,
+                            selection = selection,
+                            selectionArgs = selectionArgs,
                             contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                             relativePath = mediaStoreRelativePath,
                             fileName = config.fileName
