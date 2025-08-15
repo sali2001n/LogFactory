@@ -7,7 +7,8 @@ import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.EmailLoggerConfig
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.ThresholdType
-import com.sali.logfactory.util.StorageManager
+import com.sali.logfactory.utility.FileHelper
+import com.sali.logfactory.utility.InternalStorageHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -68,7 +69,10 @@ class EmailLogger(
     }
 
     override fun log(logEntry: LogEntry) {
-        StorageManager.writeLogsToTheFile(context, formatter.format(logEntry))
+        FileHelper.writeLogToFile(
+            InternalStorageHelper.getLogFile(context),
+            formatter.format(logEntry)
+        )
 
         when (config.thresholdType) {
             ThresholdType.Counter -> {
@@ -123,7 +127,7 @@ class EmailLogger(
             isSending = true
             loggerScope.launch {
                 try {
-                    val logFile = StorageManager.getLogFile(context)
+                    val logFile = InternalStorageHelper.getLogFile(context)
                     if (!logFile.exists() || logFile.length() == 0L) {
                         onResult(false, "Log file is empty.")
                         return@launch
@@ -169,7 +173,10 @@ class EmailLogger(
                     }
 
                     Transport.send(message)
-                    StorageManager.clearLogFile(context)
+                    logFile.delete().also {
+                        if (!it)
+                            Log.e(EMAIL_LOGGER_TAG, "Failed to delete log file")
+                    }
                     onResult(true, null)
                 } catch (e: Exception) {
                     onResult(false, e.message)

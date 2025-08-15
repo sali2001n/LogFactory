@@ -42,6 +42,13 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     testImplementation(libs.junit)
+
+    testImplementation(libs.kotlinx.coroutines.test) // Coroutines
+    testImplementation(libs.mockito.inline) // Mocking
+    testImplementation(libs.mockito.kotlin) // Mocking
+    testImplementation(libs.robolectric) // Robolectric
+    testImplementation(libs.androidx.core)
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

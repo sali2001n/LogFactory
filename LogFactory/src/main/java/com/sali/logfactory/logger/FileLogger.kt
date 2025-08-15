@@ -1,7 +1,5 @@
 package com.sali.logfactory.logger
 
-import android.content.ContentUris
-import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -13,14 +11,14 @@ import com.sali.logfactory.formatter.DefaultLogMessageFormatter
 import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.FileLoggerConfig
 import com.sali.logfactory.models.LogEntry
-import com.sali.logfactory.util.StorageManager
+import com.sali.logfactory.utility.ExternalStorageHelper
+import com.sali.logfactory.utility.FileHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
-import java.io.FileWriter
 
 /**
  * A file-based logger implementation that writes formatted log entries to a file,
@@ -54,7 +52,7 @@ class FileLogger(
     override fun initialize(context: Context) {
         this.appContext = context.applicationContext
 
-        if (StorageManager.isExternalStorageWritable()) {
+        if (ExternalStorageHelper.isExternalStorageWritable()) {
             val directory =
                 Environment.getExternalStoragePublicDirectory(config.parentDirectoryPath)
             val logDir = File(directory, config.childDirectoryPath)
@@ -116,50 +114,46 @@ class FileLogger(
             if (config.clearFileWhenAppLaunched) {
                 clearLogsFileMutex.withLock {
                     if (!isFileClearedThisSession) {
-                        val deleteResult = StorageManager.deleteFileFromMediaStore(
-                            context = currentAppContext,
+                        val deleteResult = ExternalStorageHelper.deleteFileFromMediaStore(
+                            resolver = resolver,
+                            selection = selection,
+                            selectionArgs = selectionArgs,
                             contentUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                             relativePath = mediaStoreRelativePath,
                             fileName = config.fileName
                         )
-                        evaluateDeleteFileResult(
-                            deleteResult = deleteResult,
-                            message = "Deletion failed for APIs 29>="
-                        )
+                        isFileClearedThisSession = deleteResult
+                        if (!deleteResult)
+                            Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29>=")
                     }
                 }
             }
 
             // Find or create URI
             var uri: Uri? = null
-            resolver.query(contentUri, null, selection, selectionArgs, null)
-                ?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val id =
-                            cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
-                        uri = ContentUris.withAppendedId(contentUri, id)
-                    }
-                }
+            ExternalStorageHelper.findFileUri(
+                resolver = resolver,
+                contentUri = contentUri,
+                selection = selection,
+                selectionArgs = selectionArgs
+            ) {
+                uri = it
+            }
 
             if (uri == null) {
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, config.fileName)
-                    put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, mediaStoreRelativePath)
-                }
-                uri = resolver.insert(contentUri, contentValues)
+                ExternalStorageHelper.createFileUri(
+                    fileName = config.fileName,
+                    mediaStoreRelativePath = mediaStoreRelativePath,
+                    resolver = resolver,
+                    contentUri = contentUri
+                ) { uri = it }
             }
 
-            uri?.let { fileUri ->
-                resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
-                    outputStream.write(formattedMessage.toByteArray())
-                }
-            } ?: run {
-                Log.e(
-                    FILE_LOGGER_TAG,
-                    "Failed to get or create MediaStore URI for log file."
-                )
-            }
+            FileHelper.writeToLogFile(
+                uri = uri,
+                resolver = resolver,
+                message = formattedMessage
+            )
         } catch (e: Exception) {
             Log.e(FILE_LOGGER_TAG, "Error writing to log file via MediaStore", e)
         }
@@ -174,30 +168,19 @@ class FileLogger(
                 clearLogsFileMutex.withLock {
                     if (!isFileClearedThisSession) {
                         val deleteResult = currentLogFile.delete()
-                        evaluateDeleteFileResult(
-                            deleteResult = deleteResult,
-                            message = "Deletion failed for APIs 29<"
-                        )
+                        isFileClearedThisSession = deleteResult
+                        if (!deleteResult)
+                            Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29<")
                     }
                 }
             }
 
-            val writer = FileWriter(currentLogFile, true)
-            writer.use {
-                it.append(formattedMessage)
-                it.flush()
-            }
+            FileHelper.writeLogToFile(
+                file = currentLogFile,
+                message = formattedMessage
+            )
         } catch (e: Exception) {
             Log.e(FILE_LOGGER_TAG, "Error writing to log file (old SDK)", e)
-        }
-    }
-
-    private fun evaluateDeleteFileResult(deleteResult: Boolean, message: String) {
-        if (deleteResult) {
-            isFileClearedThisSession = true
-        } else {
-            Log.e(FILE_LOGGER_TAG, message)
-            isFileClearedThisSession = false
         }
     }
 
