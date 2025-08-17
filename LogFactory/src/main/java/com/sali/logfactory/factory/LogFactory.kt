@@ -4,8 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.sali.logfactory.factory.LogFactory.configureLoggers
 import com.sali.logfactory.factory.LogFactory.shutdown
-import com.sali.logfactory.logger.LoggerInitializer
 import com.sali.logfactory.logger.ILogger
+import com.sali.logfactory.logger.LoggerInitializer
 import com.sali.logfactory.models.LogEntry
 import com.sali.logfactory.models.LogType
 import java.util.Date
@@ -33,18 +33,21 @@ import java.util.Date
 object LogFactory {
 
     private const val LOG_FACTORY_TAG = "LogFactory"
-    private var isConfigured = false // Renamed for clarity, it means LogFactory's setup is done
+    private var isConfigured = false
     private val loggers = mutableListOf<ILogger>()
+    private var minLogLevel: LogType = LogType.VERBOSE
 
     /**
      * Initializes the logging system with specified loggers.
      * This method should be called once, typically in your Application's onCreate.
      *
      * @param context Application context, used for file operations (MediaStore).
+     * @param minLogLevel Checks the minimum log level. Default behavior logs everything.
      * @param enabledLoggers A vararg list of ILogger instances to enable.
      */
     fun configureLoggers(
         context: Context,
+        minLogLevel: LogType = LogType.VERBOSE,
         vararg enabledLoggers: ILogger,
     ) {
         if (isConfigured) {
@@ -53,6 +56,7 @@ object LogFactory {
         }
 
         loggers.clear()
+        this.minLogLevel = minLogLevel
 
         enabledLoggers.forEach { logger ->
             try {
@@ -91,6 +95,8 @@ object LogFactory {
             Log.e(LOG_FACTORY_TAG, "LogFactory not configured! Call configureLoggers() first.")
             return
         }
+
+        if (logType.priority < minLogLevel.priority) return
 
         val logEntry = LogEntry(
             logType = logType,
