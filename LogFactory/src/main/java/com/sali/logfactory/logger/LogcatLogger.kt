@@ -36,11 +36,11 @@ class LogcatLogger(val formatter: LogMessageFormatter? = null) : ILogger {
             println(formatter.format(logEntry))
         } else {
             when (logEntry.logType) {
-                LogType.Debug -> Log.d(logEntry.tag, logEntry.message, logEntry.throwable)
-                LogType.Error -> Log.e(logEntry.tag, logEntry.message, logEntry.throwable)
-                LogType.Info -> Log.i(logEntry.tag, logEntry.message, logEntry.throwable)
-                LogType.Verbose -> Log.v(logEntry.tag, logEntry.message, logEntry.throwable)
-                LogType.Warn -> Log.w(logEntry.tag, logEntry.message, logEntry.throwable)
+                LogType.DEBUG -> Log.d(logEntry.tag, logEntry.message, logEntry.throwable)
+                LogType.ERROR -> Log.e(logEntry.tag, logEntry.message, logEntry.throwable)
+                LogType.INFO -> Log.i(logEntry.tag, logEntry.message, logEntry.throwable)
+                LogType.VERBOSE -> Log.v(logEntry.tag, logEntry.message, logEntry.throwable)
+                LogType.WARN -> Log.w(logEntry.tag, logEntry.message, logEntry.throwable)
             }
         }
     }

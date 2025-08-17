@@ -3,7 +3,7 @@ package com.sali.logfactory.models
 import java.util.Date
 
 enum class LogType {
-    Debug, Error, Info, Verbose, Warn,
+    DEBUG, ERROR, INFO, VERBOSE, WARN,
 }
 
 data class LogEntry(
