@@ -2,6 +2,7 @@ package com.sali.logfactory.logger
 
 import android.content.Context
 import android.util.Log
+import com.sali.logfactory.factory.LibraryTag
 import com.sali.logfactory.formatter.DefaultLogMessageFormatter
 import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.EmailLoggerConfig
@@ -49,7 +50,7 @@ class EmailLogger(
 ) : ILogger, LoggerInitializer {
 
     companion object {
-        private const val EMAIL_LOGGER_TAG = "EmailLogger"
+        private const val LOG_TAG = "${LibraryTag.TAG}/EmailLogger"
     }
 
     private lateinit var context: Context
@@ -118,7 +119,7 @@ class EmailLogger(
             onSuccess()
         } else {
             onFailure()
-            Log.e(EMAIL_LOGGER_TAG, "SMTP failed: $message")
+            Log.e(LOG_TAG, "SMTP failed: $message")
         }
     }
 
@@ -175,7 +176,7 @@ class EmailLogger(
                     Transport.send(message)
                     logFile.delete().also {
                         if (!it)
-                            Log.e(EMAIL_LOGGER_TAG, "Failed to delete log file")
+                            Log.e(LOG_TAG, "Failed to delete log file")
                     }
                     onResult(true, null)
                 } catch (e: Exception) {

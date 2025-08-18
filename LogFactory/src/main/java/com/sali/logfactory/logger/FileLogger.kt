@@ -7,6 +7,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.RequiresApi
+import com.sali.logfactory.factory.LibraryTag
 import com.sali.logfactory.formatter.DefaultLogMessageFormatter
 import com.sali.logfactory.formatter.LogMessageFormatter
 import com.sali.logfactory.models.FileLoggerConfig
@@ -40,7 +41,7 @@ class FileLogger(
 ) : ILogger, LoggerInitializer {
 
     companion object {
-        private const val FILE_LOGGER_TAG = "FileLogger"
+        private const val LOG_TAG = "${LibraryTag.TAG}/FileLogger"
     }
 
     private var logFile: File? = null
@@ -61,17 +62,17 @@ class FileLogger(
             }
             logFile = File(logDir, config.fileName)
             Log.i(
-                FILE_LOGGER_TAG,
+                LOG_TAG,
                 "FileLogger initialized. Log file path: ${logFile?.absolutePath}"
             )
         } else {
-            Log.e(FILE_LOGGER_TAG, "External storage not writable for FileLogger.")
+            Log.e(LOG_TAG, "External storage not writable for FileLogger.")
         }
     }
 
     override fun log(logEntry: LogEntry) {
         if (!isInitialized()) {
-            Log.e(FILE_LOGGER_TAG, "FileLogger not initialized! Call initialize() first.")
+            Log.e(LOG_TAG, "FileLogger not initialized! Call initialize() first.")
             return
         }
 
@@ -124,7 +125,7 @@ class FileLogger(
                         )
                         isFileClearedThisSession = deleteResult
                         if (!deleteResult)
-                            Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29>=")
+                            Log.e(LOG_TAG, "Deletion failed for APIs 29>=")
                     }
                 }
             }
@@ -155,7 +156,7 @@ class FileLogger(
                 message = formattedMessage
             )
         } catch (e: Exception) {
-            Log.e(FILE_LOGGER_TAG, "Error writing to log file via MediaStore", e)
+            Log.e(LOG_TAG, "Error writing to log file via MediaStore", e)
         }
     }
 
@@ -170,7 +171,7 @@ class FileLogger(
                         val deleteResult = currentLogFile.delete()
                         isFileClearedThisSession = deleteResult
                         if (!deleteResult)
-                            Log.e(FILE_LOGGER_TAG, "Deletion failed for APIs 29<")
+                            Log.e(LOG_TAG, "Deletion failed for APIs 29<")
                     }
                 }
             }
@@ -180,7 +181,7 @@ class FileLogger(
                 message = formattedMessage
             )
         } catch (e: Exception) {
-            Log.e(FILE_LOGGER_TAG, "Error writing to log file (old SDK)", e)
+            Log.e(LOG_TAG, "Error writing to log file (old SDK)", e)
         }
     }
 
