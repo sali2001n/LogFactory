@@ -7,10 +7,11 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import com.sali.logfactory.factory.LibraryTag
 
 object ExternalStorageHelper {
 
-    private const val STORAGE_MANAGER_TAG = "ExternalStorageManager"
+    private const val LOG_TAG = "${LibraryTag.TAG}/ExternalStorageManager"
 
     internal fun findFileUri(
         resolver: ContentResolver,
@@ -67,14 +68,14 @@ object ExternalStorageHelper {
                         cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
                     val uriToDelete = ContentUris.withAppendedId(contentUri, id)
                     resolver.delete(uriToDelete, null, null)
-                    Log.d(STORAGE_MANAGER_TAG, "Deleted file $fileName in $relativePath")
+                    Log.d(LOG_TAG, "Deleted file $fileName in $relativePath")
                     true
                 } else {
                     false
                 }
             } ?: false
         } catch (e: Exception) {
-            Log.e(STORAGE_MANAGER_TAG, "Failed to delete file: ${e.message}")
+            Log.e(LOG_TAG, "Failed to delete file: ${e.message}")
             false
         }
     }
