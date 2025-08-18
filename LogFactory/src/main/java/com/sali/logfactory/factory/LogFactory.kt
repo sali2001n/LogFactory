@@ -32,7 +32,7 @@ import java.util.Date
  */
 object LogFactory {
 
-    private const val LOG_FACTORY_TAG = "LogFactory"
+    private const val LOG_TAG = "${LibraryTag.TAG}/Factory"
     private var isConfigured = false
     private val loggers = mutableListOf<ILogger>()
     private var minLogLevel: LogType = LogType.VERBOSE
@@ -51,7 +51,7 @@ object LogFactory {
         vararg enabledLoggers: ILogger,
     ) {
         if (isConfigured) {
-            Log.w(LOG_FACTORY_TAG, "LogFactory already configured.")
+            Log.w(LOG_TAG, "LogFactory already configured.")
             return
         }
 
@@ -66,7 +66,7 @@ object LogFactory {
                 loggers.add(logger)
             } catch (e: Exception) {
                 Log.e(
-                    LOG_FACTORY_TAG,
+                    LOG_TAG,
                     "Failed to initialize logger: ${logger::class.simpleName}",
                     e
                 )
@@ -74,7 +74,7 @@ object LogFactory {
         }
 
         isConfigured = true
-        Log.i(LOG_FACTORY_TAG, "LogFactory configured with ${loggers.size} loggers.")
+        Log.i(LOG_TAG, "LogFactory configured with ${loggers.size} loggers.")
     }
 
     /**
@@ -92,7 +92,7 @@ object LogFactory {
         throwable: Throwable? = null,
     ) {
         if (!isConfigured) {
-            Log.e(LOG_FACTORY_TAG, "LogFactory not configured! Call configureLoggers() first.")
+            Log.e(LOG_TAG, "LogFactory not configured! Call configureLoggers() first.")
             return
         }
 
@@ -118,7 +118,7 @@ object LogFactory {
     fun shutdown() {
         loggers.clear()
         isConfigured = false
-        Log.i(LOG_FACTORY_TAG, "LogFactory shutdown.")
+        Log.i(LOG_TAG, "LogFactory shutdown.")
     }
 
 }
